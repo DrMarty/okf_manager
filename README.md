@@ -165,6 +165,12 @@ tags:
 
 The Plugin Index uses a separate `index.yaml` file in the `agent0ai/a0-plugins` repository. Do not confuse it with this plugin's runtime `plugin.yaml`.
 
+A square, Plugin Index-compliant thumbnail is prepared at:
+
+```text
+docs/community/thumbnail.png
+```
+
 ## License
 
 MIT. See `LICENSE`.
