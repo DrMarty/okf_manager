@@ -1,0 +1,11 @@
+catalog_root: okf
+catalog_default_slug: catalog
+evidence_folders:
+  - raw
+  - source
+  - sources
+  - inputs
+  - docs
+auto_generate_viz: true
+auto_update_indexes: true
+strict_reference_frontmatter: true

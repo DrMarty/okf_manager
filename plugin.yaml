@@ -1,0 +1,16 @@
+name: okf_manager
+title: OKF Manager
+description: Portable Open Knowledge Format catalog management for Agent Zero projects, with an okf_mgr specialist profile, reusable project skill, and validation/index/visualization helpers.
+version: 0.1.0
+author: DrMarty
+plugin_url: https://github.com/DrMarty/okf_manager
+settings_sections: []
+per_project_config: true
+per_agent_config: false
+always_enabled: false
+tags:
+  - knowledge
+  - agents
+  - workflow
+  - automation
+  - development
