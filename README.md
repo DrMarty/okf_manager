@@ -1,6 +1,6 @@
 # OKF Manager
 
-OKF Manager packages a portable Open Knowledge Format ([OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)) workflow for Agent Zero projects.
+OKF Manager delivers portable Open Knowledge Format ([OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)) management to Agent Zero projects.
 
 It provides:
 
@@ -10,7 +10,7 @@ It provides:
 
 ## What this plugin is for
 
-Use OKF Manager when you want Agent Zero to maintain a project-local knowledge catalog with Markdown concept documents, YAML frontmatter, citations, indexes, update logs, and an interactive `viz.html` graph.
+Use OKF Manager to maintain global / project-specific knowledge catalogs with Markdown concept documents, YAML frontmatter, citations, indexes, update logs, and an interactive `viz.html` graph.
 
 Typical requests:
 
