@@ -15,6 +15,7 @@
 - `agents/okf_mgr/` owns the bundled specialist OKF agent profile and has its own child DOX contract.
 - `scripts/` owns standalone validation, index-generation, and visualization helper scripts.
 - `docs/community/` owns Plugin Index submission artifacts such as `index.yaml` and `thumbnail.png`.
+- `webui/` owns runtime WebUI assets exposed through Agent Zero's `/plugins/<name>/webui/...` static route, including the plugin-dialog thumbnail.
 
 ## DOX / Runtime Separation Contract
 
@@ -36,6 +37,7 @@
 - Runtime defaults are owned by `default_config.yaml`.
 - Plugin Index metadata is owned by `docs/community/index.yaml`.
 - Plugin Index thumbnail is owned by `docs/community/thumbnail.png`.
+- Agent Zero plugins-dialog thumbnail is owned by `webui/thumbnail.png`; Agent Zero discovers it as `/plugins/okf_manager/webui/thumbnail.png`.
 
 ## Local Contracts
 
@@ -46,6 +48,7 @@
 - Preserve the README web-ingestion/network disclosure whenever changing URL-fetch or crawl behavior.
 - Do not store generated project OKF catalog data, raw ingested sources, chat transcripts, secrets, tokens, or local user data in the plugin repository.
 - Keep Plugin Index artifacts small and valid: `docs/community/index.yaml` must follow the Plugin Index schema, and `docs/community/thumbnail.png` must remain square and no larger than 20 KB.
+- Keep the runtime plugin-dialog thumbnail at `webui/thumbnail.png`; it should be a valid square image and may mirror `docs/community/thumbnail.png` when the same artwork is appropriate.
 - Keep the root plugin DOX focused on repository maintenance; put profile-specific contracts in `agents/okf_mgr/AGENTS.md`.
 
 ## Work Guidance
@@ -112,7 +115,8 @@ Run relevant checks after edits:
 - If Plugin Index files changed, verify:
   - `docs/community/index.yaml` is valid YAML,
   - `docs/community/index.yaml` is no larger than 2000 characters,
-  - `docs/community/thumbnail.png` is square and no larger than 20 KB.
+  - `docs/community/thumbnail.png` is square and no larger than 20 KB,
+  - `webui/thumbnail.png` exists, is a valid square image, and is discoverable by Agent Zero as `/plugins/okf_manager/webui/thumbnail.png`.
 - Before committing, confirm no `__pycache__`, `.pyc`, generated project OKF catalogs, secrets, tokens, or local runtime artifacts are staged.
 
 ## Child DOX Index
