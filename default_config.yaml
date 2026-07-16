@@ -1,5 +1,8 @@
 catalog_root: okf
 catalog_default_slug: catalog
+global_catalog_root: /a0/usr/okf
+global_catalog_default_slug: catalog
+require_confirmation_before_create_bundle: true
 evidence_folders:
   - raw
   - source

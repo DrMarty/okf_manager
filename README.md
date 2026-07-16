@@ -55,19 +55,39 @@ okf_manager/
 
 ## How catalog paths are resolved
 
-The skill stores derived catalogs inside the active Agent Zero project.
+The skill stores derived catalogs in the active Agent Zero project when one is available. If OKF Manager is called outside an active project, it uses a global user OKF workspace instead.
 
 Resolution order:
 
 1. Use an explicit catalog path from the user or project instructions.
-2. Otherwise use an existing project-local `okf/*/` bundle if exactly one exists.
-3. Otherwise create/use:
+2. If an active project exists, use an existing project-local `okf/*/` bundle if exactly one exists.
+3. If no active project exists, use an existing global `/a0/usr/okf/*/` bundle if exactly one exists.
+4. Otherwise propose the default project-local or global catalog path:
 
 ```text
 <project-root>/okf/catalog/
 ```
 
-The plugin intentionally keeps project data in the project. It should not write derived OKF catalog files into the plugin directory.
+or, outside a project:
+
+```text
+/a0/usr/okf/catalog/
+```
+
+The plugin intentionally keeps project data in the project. Global OKF data is kept under `/a0/usr/okf/`, not in the plugin directory.
+
+### Bundle creation confirmation
+
+OKF Manager must always ask the user for explicit confirmation before creating a new OKF bundle directory.
+
+Before creating a bundle, the agent should report:
+
+- whether the bundle is project-local or global,
+- the exact target catalog directory,
+- the source/evidence locations that will be used, if known,
+- the first intended operation.
+
+Existing bundle maintenance does not require this creation confirmation, but ambiguous catalog selection still requires clarification.
 
 ## Project conventions
 
