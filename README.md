@@ -1,6 +1,6 @@
 # OKF Manager
 
-OKF Manager packages a portable Open Knowledge Format (OKF) workflow for Agent Zero projects.
+OKF Manager packages a portable Open Knowledge Format ([OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)) workflow for Agent Zero projects.
 
 It provides:
 
