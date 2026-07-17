@@ -64,6 +64,7 @@ Do not create the bundle until the user confirms. Existing bundle maintenance do
    - Preserve provenance in `# Citations` sections.
    - Use relative internal links for OKF relationships.
    - Use `index.md` only for directory indexes and `log.md` only for chronological update history.
+   - Do not paste generated Markdown or prose directly into `code_execution_tool` shell commands; write concept files with OKF tools, `text_editor`, or carefully quoted here-docs/scripts so headings, backticks, paths, and links are not executed by the shell.
 8. After changes, ensure the bundle is validated, indexes are regenerated, `log.md` is updated, and `viz.html` is refreshed when graph-visible content changes.
 9. Report changed paths and verification results to the user.
 

@@ -112,22 +112,53 @@ def _build_graph(root: Path) -> dict:
     }
 
 
+
+def _parse_simple_frontmatter(raw: str) -> dict:
+    """Parse the simple YAML subset commonly used by OKF frontmatter.
+
+    This fallback keeps the standalone helper script independent of PyYAML so
+    `./scripts/okf_visualize_bundle.py` works under the system Python too.
+    """
+    result = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key:
+            continue
+        if value.startswith("[") and value.endswith("]"):
+            inner = value[1:-1].strip()
+            result[key] = [item.strip().strip('"\'') for item in inner.split(",") if item.strip()]
+        else:
+            result[key] = value.strip('"\'')
+    return result
+
+
+def _load_frontmatter(raw: str) -> dict:
+    try:
+        import yaml
+
+        parsed = yaml.safe_load(raw) or {}
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+    return _parse_simple_frontmatter(raw)
+
+
 def _doc(path: Path):
     text = path.read_text(encoding="utf-8", errors="replace")
-    if text.startswith("---\n"):
-        end = text.find("\n---", 4)
+    normalized = text.replace("\r\n", "\n")
+    if normalized.startswith("---\n"):
+        end = normalized.find("\n---", 4)
         if end >= 0:
-            try:
-                import yaml
-
-                fm = yaml.safe_load(text[4:end]) or {}
-                if not isinstance(fm, dict):
-                    fm = {}
-                return fm, text[end + 4 :].lstrip("\n")
-            except Exception:
-                pass
-    return {}, text
-
+            fm = _load_frontmatter(normalized[4:end])
+            body = normalized[end + 4 :].lstrip("\n")
+            return fm, body
+    return {}, normalized
 
 def _render_html(bundle_name: str, graph: dict) -> str:
     data = json.dumps(graph, ensure_ascii=False)
