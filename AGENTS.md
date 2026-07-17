@@ -48,6 +48,7 @@
 - Preserve the README web-ingestion/network disclosure whenever changing URL-fetch or crawl behavior.
 - Do not store generated project OKF catalog data, raw ingested sources, chat transcripts, secrets, tokens, or local user data in the plugin repository.
 - Keep Plugin Index artifacts small and valid: `docs/community/index.yaml` must follow the Plugin Index schema, and `docs/community/thumbnail.png` must remain square and no larger than 20 KB.
+- Keep generated `viz.html` graph views stable in Agent Zero's constrained Browser side tab: avoid hover/mousemove handlers, tooltips, or resize logic that can change document layout or trigger aspect-ratio oscillation.
 - Keep the runtime plugin-dialog thumbnail at `webui/thumbnail.png`; it should be a valid square image and may mirror `docs/community/thumbnail.png` when the same artwork is appropriate.
 - Keep the root plugin DOX focused on repository maintenance; put profile-specific contracts in `agents/okf_mgr/AGENTS.md`.
 

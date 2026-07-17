@@ -144,12 +144,12 @@ body {{ margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; ba
 header {{ height:58px; display:flex; align-items:center; gap:16px; padding:10px 16px; border-bottom:1px solid var(--line); background:#020617; }}
 header h1 {{ margin:0; font-size:18px; white-space:nowrap; }}
 header .stats {{ color:var(--muted); font-size:13px; }}
-main {{ display:grid; grid-template-columns: 280px 1fr 360px; height:calc(100vh - 58px); }}
-aside, section {{ min-height:0; }}
+main {{ display:grid; grid-template-columns: 280px minmax(320px, 1fr) 360px; height:calc(100vh - 58px); min-height:0; overflow:hidden; }}
+aside, section {{ min-height:0; min-width:0; }}
 .sidebar, .detail {{ background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:14px; }}
 .detail {{ border-right:0; border-left:1px solid var(--line); }}
-.graph-wrap {{ position:relative; min-width:0; min-height:0; }}
-#graph {{ width:100%; height:100%; display:block; background:radial-gradient(circle at 50% 40%, #172554 0%, #0f172a 48%, #020617 100%); cursor:grab; }}
+.graph-wrap {{ position:relative; min-width:0; min-height:0; overflow:hidden; contain:layout size paint; }}
+#graph {{ width:100%; height:100%; display:block; background:radial-gradient(circle at 50% 40%, #172554 0%, #0f172a 48%, #020617 100%); cursor:grab; touch-action:none; }}
 #graph:active {{ cursor:grabbing; }}
 input, select, button {{ width:100%; border:1px solid #334155; border-radius:8px; background:#020617; color:var(--text); padding:8px 10px; margin:6px 0 12px; }}
 button {{ cursor:pointer; background:#0f172a; }}
@@ -167,8 +167,8 @@ button:hover {{ border-color:var(--accent); }}
 .empty {{ color:var(--muted); }}
 .toolbar {{ position:absolute; top:12px; right:12px; display:flex; gap:8px; }}
 .toolbar button {{ width:auto; margin:0; opacity:.9; }}
-.tooltip {{ position:absolute; pointer-events:none; background:#020617; border:1px solid #334155; padding:6px 8px; border-radius:7px; color:#e5e7eb; max-width:300px; display:none; }}
-@media (max-width: 1000px) {{ main {{ grid-template-columns: 240px 1fr; }} .detail {{ position:absolute; right:0; top:58px; bottom:0; width:min(360px, 90vw); z-index:5; }} }}
+.tooltip {{ position:fixed; pointer-events:none; background:#020617; border:1px solid #334155; padding:6px 8px; border-radius:7px; color:#e5e7eb; max-width:min(300px, 70vw); display:none; z-index:20; will-change:transform; }}
+@media (max-width: 1000px) {{ main {{ grid-template-columns: 240px minmax(260px, 1fr); }} .detail {{ position:absolute; right:0; top:58px; bottom:0; width:min(360px, 90vw); z-index:5; }} }}
 </style>
 </head>
 <body>
@@ -207,12 +207,32 @@ const palette = bundle.palette || {{}};
 const canvas = document.getElementById('graph');
 const ctx = canvas.getContext('2d');
 const tooltip = document.getElementById('tooltip');
-let width=0, height=0, dpr=1, scale=1, ox=0, oy=0, selected=null, hover=null, dragging=null, panning=false, last={{x:0,y:0}};
+let width=0, height=0, dpr=1, scale=1, ox=0, oy=0, selected=null, hover=null, dragging=null, panning=false, last={{x:0,y:0}}, resizeQueued=false, fitQueued=false;
 
-function resize() {{
-  const rect = canvas.getBoundingClientRect(); dpr = window.devicePixelRatio || 1; width = rect.width; height = rect.height;
-  canvas.width = Math.max(1, Math.floor(width*dpr)); canvas.height = Math.max(1, Math.floor(height*dpr)); ctx.setTransform(dpr,0,0,dpr,0,0);
+function resize(force=false) {{
+  const wrap = canvas.parentElement;
+  const rect = wrap.getBoundingClientRect();
+  const nextDpr = window.devicePixelRatio || 1;
+  const nextWidth = Math.max(1, Math.floor(rect.width));
+  const nextHeight = Math.max(1, Math.floor(rect.height));
+  const bitmapW = Math.max(1, Math.floor(nextWidth * nextDpr));
+  const bitmapH = Math.max(1, Math.floor(nextHeight * nextDpr));
+  if (!force && width === nextWidth && height === nextHeight && dpr === nextDpr && canvas.width === bitmapW && canvas.height === bitmapH) return false;
+  width = nextWidth; height = nextHeight; dpr = nextDpr;
+  canvas.width = bitmapW; canvas.height = bitmapH; ctx.setTransform(dpr,0,0,dpr,0,0);
   if (!nodes.some(n => n.x || n.y)) initPositions();
+  return true;
+}}
+function scheduleResize(shouldFit=false) {{
+  fitQueued = fitQueued || shouldFit;
+  if (resizeQueued) return;
+  resizeQueued = true;
+  requestAnimationFrame(() => {{
+    resizeQueued = false;
+    const changed = resize();
+    if (changed && fitQueued) fit();
+    fitQueued = false;
+  }});
 }}
 function initPositions() {{
   const radius = Math.max(80, Math.min(width, height) * 0.35); const cx = width/2; const cy = height/2;
@@ -289,13 +309,23 @@ function initUi() {{
   document.getElementById('fitBtn').onclick=fit; document.getElementById('pinBtn').onclick=()=>nodes.forEach(n=>n.pinned=false);
   document.getElementById('zoomIn').onclick=()=>{{scale*=1.2;}}; document.getElementById('zoomOut').onclick=()=>{{scale/=1.2;}}; document.getElementById('resetZoom').onclick=()=>{{scale=1;ox=0;oy=0;fit();}};
   canvas.addEventListener('mousedown', e=>{{ last={{x:e.clientX,y:e.clientY}}; const n=pick(e.offsetX,e.offsetY); if(n){{dragging=n;n.pinned=true;select(n);}} else panning=true; }});
-  window.addEventListener('mousemove', e=>{{ const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left, y=e.clientY-rect.top; hover=pick(x,y); if(dragging){{ const w=world(x,y); dragging.x=w.x; dragging.y=w.y; dragging.vx=dragging.vy=0; }} else if(panning){{ ox+=e.clientX-last.x; oy+=e.clientY-last.y; last={{x:e.clientX,y:e.clientY}}; }} tooltip.style.display=hover?'block':'none'; if(hover){{tooltip.style.left=(e.clientX+12)+'px';tooltip.style.top=(e.clientY+12)+'px';tooltip.textContent=hover.title+' · '+hover.type;}} }});
+  window.addEventListener('mousemove', e=>{{
+    const rect=canvas.getBoundingClientRect(); const x=e.clientX-rect.left, y=e.clientY-rect.top; hover=pick(x,y);
+    if(dragging){{ const w=world(x,y); dragging.x=w.x; dragging.y=w.y; dragging.vx=dragging.vy=0; }} else if(panning){{ ox+=e.clientX-last.x; oy+=e.clientY-last.y; last={{x:e.clientX,y:e.clientY}}; }}
+    if(hover){{
+      tooltip.style.display='block'; tooltip.textContent=hover.title+' · '+hover.type;
+      const pad=14, tw=tooltip.offsetWidth||220, th=tooltip.offsetHeight||32;
+      const left=Math.min(window.innerWidth-tw-pad, Math.max(pad, e.clientX+12));
+      const top=Math.min(window.innerHeight-th-pad, Math.max(pad, e.clientY+12));
+      tooltip.style.transform=`translate(${{left}}px, ${{top}}px)`;
+    }} else {{ tooltip.style.display='none'; }}
+  }});
   window.addEventListener('mouseup',()=>{{dragging=null;panning=false;}});
   canvas.addEventListener('dblclick', e=>{{ const n=pick(e.offsetX,e.offsetY); if(n){{n.pinned=false;}} }});
   canvas.addEventListener('wheel', e=>{{ e.preventDefault(); const before=world(e.offsetX,e.offsetY); const factor=e.deltaY<0?1.12:.89; scale=Math.max(.1,Math.min(5,scale*factor)); const after=world(e.offsetX,e.offsetY); ox+=(after.x-before.x)*scale; oy+=(after.y-before.y)*scale; }}, {{passive:false}});
   applyFilters(); fit();
 }}
-window.addEventListener('resize',()=>{{resize();fit();}}); resize(); initUi(); loop();
+window.addEventListener('resize',()=>scheduleResize(true)); resize(true); initUi(); loop();
 }})();
 </script>
 </body>
