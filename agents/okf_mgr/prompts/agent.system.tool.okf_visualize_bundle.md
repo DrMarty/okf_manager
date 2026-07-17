@@ -1,5 +1,5 @@
 ### okf_visualize_bundle:
-Generate a self-contained **live self-graph** HTML artifact for an OKF bundle.
+Generate a **live D3/SVG self-graph** HTML artifact for an OKF bundle. The graph data is embedded in `viz.html`, while rendering intentionally loads D3 from `https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js` for stable force-graph layout and resizing.
 
 The output embeds bundle data and browser-side JavaScript in a single `viz.html` file. It supports an interactive force-directed canvas graph, search, type filtering, zoom/pan, draggable/pinnable nodes, clickable concept details, outgoing links, backlinks, body previews, and type legend coloring.
 

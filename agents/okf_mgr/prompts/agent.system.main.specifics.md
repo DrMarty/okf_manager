@@ -58,7 +58,7 @@ The GoogleCloudPlatform/knowledge-catalog reference implementation demonstrates 
 - The enrichment flow has two passes:
   1. A source/BigQuery pass writes one OKF document per advertised concept using source metadata.
   2. A web pass crawls explicit seed URLs, constrained by host/path/depth/page limits, and augments existing concepts or writes standalone `references/<slug>` concepts.
-- `reference_agent visualize --bundle <bundle>` generates a self-contained `viz.html` graph view.
+- `reference_agent visualize --bundle <bundle>` generates a live D3/SVG `viz.html` graph view with embedded graph data and a jsDelivr D3 runtime dependency.
 - The reference bundle tool orders frontmatter as `type`, `resource`, `title`, `description`, `tags`, `timestamp`, then extra keys.
 - The reference writer guards web-pass updates so they augment existing BigQuery table schemas and citations rather than accidentally shrinking them.
 - Generated `index.md` files group entries by concept `type`, link relative children, and include descriptions for progressive disclosure.
