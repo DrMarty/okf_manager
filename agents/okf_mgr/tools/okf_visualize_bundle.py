@@ -191,6 +191,15 @@ button:hover { border-color:var(--accent); }
 .legend-item { display:flex; align-items:center; gap:8px; margin:6px 0; color:#cbd5e1; }
 .swatch { width:11px; height:11px; border-radius:50%; flex:none; }
 .node-list { margin-top:12px; border-top:1px solid var(--line); padding-top:8px; }
+.custom-select { position:relative; margin:6px 0 12px; }
+.type-summary { width:100%; border:1px solid #334155; border-radius:8px; background:#020617; color:var(--text); padding:8px 10px; cursor:pointer; list-style:none; }
+.type-summary::-webkit-details-marker { display:none; }
+.type-summary::after { content:'▾'; float:right; color:var(--muted); }
+.custom-select[open] .type-summary { border-color:var(--accent); }
+.type-menu { max-height:260px; overflow:auto; border:1px solid #334155; border-radius:8px; background:#020617; margin-top:4px; padding:4px; box-shadow:0 12px 28px rgba(0,0,0,.35); }
+.type-option { width:100%; text-align:left; border:0; border-radius:6px; margin:2px 0; padding:7px 8px; background:transparent; color:#cbd5e1; }
+.type-option:hover, .type-option.active { background:#1e293b; color:white; }
+.native-type-select { display:none; }
 .node-row { padding:7px; border-radius:7px; cursor:pointer; color:#cbd5e1; }
 .node-row:hover, .node-row.active { background:#1e293b; color:white; }
 .badge { display:inline-block; padding:2px 6px; border:1px solid #334155; border-radius:999px; color:#cbd5e1; font-size:11px; margin:2px 4px 2px 0; }
@@ -221,7 +230,11 @@ button:hover { border-color:var(--accent); }
     <label>Search concepts</label>
     <input id="search" placeholder="title, id, tag, description">
     <label>Filter by type</label>
-    <select id="typeFilter"><option value="">All types</option></select>
+    <select id="typeFilter" class="native-type-select" aria-hidden="true"><option value="">All types</option></select>
+    <details id="typeDropdown" class="custom-select">
+      <summary id="typeSummary" class="type-summary">All types</summary>
+      <div id="typeMenu" class="type-menu" role="listbox" aria-label="Filter by type"></div>
+    </details>
     <button id="fitBtn">Fit graph</button>
     <button id="pinBtn">Unpin all nodes</button>
     <p class="empty">Live D3 self-graph: nodes are draggable and pinnable. Double-click a node to unpin it; use the mouse wheel to zoom and drag empty space to pan.</p>
@@ -355,9 +368,20 @@ function scheduleResize() {
   resizeTimer = setTimeout(() => { resize(); fit(0); }, 120);
 }
 
+function currentTypeFilter() { return document.getElementById('typeFilter').value || ''; }
+function setTypeFilter(value) {
+  const select = document.getElementById('typeFilter');
+  const summary = document.getElementById('typeSummary');
+  const dropdown = document.getElementById('typeDropdown');
+  select.value = value || '';
+  summary.textContent = value || 'All types';
+  document.querySelectorAll('.type-option').forEach(btn => btn.classList.toggle('active', btn.dataset.value === select.value));
+  if (dropdown) dropdown.open = false;
+  applyFilters();
+}
 function applyFilters() {
   const q = document.getElementById('search').value.trim().toLowerCase();
-  const typ = document.getElementById('typeFilter').value;
+  const typ = currentTypeFilter();
   for (const n of nodes) {
     const hay = [n.id,n.title,n.description,n.type,(n.tags||[]).join(' ')].join(' ').toLowerCase();
     n.visible = (!q || hay.includes(q)) && (!typ || n.type === typ);
@@ -383,10 +407,14 @@ function renderList() {
 function updateStats() { document.getElementById('stats').textContent = `${visibleNodes().length}/${nodes.length} concepts · ${visibleLinks().length}/${links.length} links · ${bundle.types.length} types`; }
 function initUi() {
   const typeFilter = document.getElementById('typeFilter');
+  const typeMenu = document.getElementById('typeMenu');
   for (const t of bundle.types) typeFilter.insertAdjacentHTML('beforeend', `<option value="${escape(t)}">${escape(t)}</option>`);
+  const typeChoices = [''].concat(bundle.types);
+  typeMenu.innerHTML = typeChoices.map(t => `<button type="button" class="type-option ${t===''?'active':''}" role="option" data-value="${escape(t)}">${escape(t || 'All types')}</button>`).join('');
+  typeMenu.querySelectorAll('.type-option').forEach(btn => btn.addEventListener('click', ev => { ev.preventDefault(); setTypeFilter(btn.dataset.value || ''); }));
   document.getElementById('legend').innerHTML = bundle.types.map(t=>`<div class="legend-item"><span class="swatch" style="background:${palette[t]||'#94a3b8'}"></span>${escape(t)}</div>`).join('');
   document.getElementById('search').addEventListener('input', applyFilters);
-  typeFilter.addEventListener('change', applyFilters);
+  typeFilter.addEventListener('change', () => setTypeFilter(typeFilter.value));
   document.getElementById('fitBtn').onclick = () => fit();
   document.getElementById('pinBtn').onclick = () => { nodes.forEach(n => { n.fx = null; n.fy = null; }); simulation.alpha(0.25).restart(); };
   document.getElementById('zoomIn').onclick = () => svg.transition().duration(160).call(zoom.scaleBy, 1.2);
