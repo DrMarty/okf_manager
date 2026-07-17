@@ -179,10 +179,13 @@ body { font:14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; background:va
 header { height:58px; display:flex; align-items:center; gap:16px; padding:10px 16px; border-bottom:1px solid var(--line); background:#020617; overflow:hidden; }
 header h1 { margin:0; font-size:18px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 header .stats { color:var(--muted); font-size:13px; white-space:nowrap; }
-main { display:grid; grid-template-columns: 280px minmax(0, 1fr) 360px; height:calc(100vh - 58px); min-height:0; overflow:hidden; }
+main { --left-panel-width:280px; --right-panel-width:360px; display:grid; grid-template-columns: var(--left-panel-width) 7px minmax(0, 1fr) 7px var(--right-panel-width); height:calc(100vh - 58px); min-height:0; overflow:hidden; }
 aside, section { min-height:0; min-width:0; }
 .sidebar, .detail { background:var(--panel); border-right:1px solid var(--line); overflow:auto; padding:14px; }
+.detail { display:flex; flex-direction:column; min-height:0; }
 .detail { border-right:0; border-left:1px solid var(--line); }
+.resizer { background:#020617; border-left:1px solid var(--line); border-right:1px solid var(--line); cursor:col-resize; min-width:7px; touch-action:none; z-index:6; }
+.resizer:hover, .resizer.dragging { background:#0f3b57; border-color:var(--accent); }
 .graph-wrap { position:relative; min-width:0; min-height:0; overflow:hidden; contain:layout paint; }
 #graph { width:100%; height:100%; display:block; background:radial-gradient(circle at 50% 40%, #172554 0%, #0f172a 48%, #020617 100%); touch-action:none; }
 input, select, button { width:100%; border:1px solid #334155; border-radius:8px; background:#020617; color:var(--text); padding:8px 10px; margin:6px 0 12px; }
@@ -196,7 +199,7 @@ button:hover { border-color:var(--accent); }
 .type-summary::-webkit-details-marker { display:none; }
 .type-summary::after { content:'▾'; float:right; color:var(--muted); }
 .custom-select[open] .type-summary { border-color:var(--accent); }
-.type-menu { max-height:260px; overflow:auto; border:1px solid #334155; border-radius:8px; background:#020617; margin-top:4px; padding:4px; box-shadow:0 12px 28px rgba(0,0,0,.35); }
+.type-menu { position:absolute; left:0; right:0; top:calc(100% + 4px); max-height:min(360px, 60vh); overflow:auto; border:1px solid #334155; border-radius:8px; background:#020617; margin-top:0; padding:4px; box-shadow:0 12px 28px rgba(0,0,0,.55); z-index:30; }
 .type-option { width:100%; text-align:left; border:0; border-radius:6px; margin:2px 0; padding:7px 8px; background:transparent; color:#cbd5e1; }
 .type-option:hover, .type-option.active { background:#1e293b; color:white; }
 .native-type-select { display:none; }
@@ -205,7 +208,8 @@ button:hover { border-color:var(--accent); }
 .badge { display:inline-block; padding:2px 6px; border:1px solid #334155; border-radius:999px; color:#cbd5e1; font-size:11px; margin:2px 4px 2px 0; }
 .detail h2 { margin:0 0 4px; font-size:19px; }
 .detail .id { color:var(--muted); font-family:ui-monospace,monospace; font-size:12px; word-break:break-all; }
-.detail pre { white-space:pre-wrap; background:#020617; padding:10px; border-radius:8px; max-height:280px; overflow:auto; border:1px solid #334155; }
+.detail pre { white-space:pre-wrap; background:#020617; padding:10px; border-radius:8px; overflow:auto; border:1px solid #334155; }
+.detail .body-preview { flex:1 1 auto; min-height:180px; max-height:none; margin-bottom:0; }
 .detail a { color:#7dd3fc; }
 .empty { color:var(--muted); }
 .toolbar { position:absolute; top:12px; right:12px; display:flex; gap:8px; z-index:4; }
@@ -217,7 +221,7 @@ button:hover { border-color:var(--accent); }
 .node text { pointer-events:none; fill:#e5e7eb; font-size:12px; paint-order:stroke; stroke:#020617; stroke-width:3px; stroke-linejoin:round; }
 .link { stroke:rgba(148,163,184,.5); stroke-width:1.2px; marker-end:url(#arrow); }
 .link.selected { stroke:#7dd3fc; stroke-width:1.8px; marker-end:url(#arrow-selected); }
-@media (max-width: 1000px) { main { grid-template-columns: 240px minmax(0, 1fr); } .detail { position:absolute; right:0; top:58px; bottom:0; width:min(360px, 90vw); z-index:5; } }
+@media (max-width: 1000px) { main { --left-panel-width:240px; grid-template-columns: var(--left-panel-width) 7px minmax(0, 1fr); } .right-resizer { display:none; } .detail { position:absolute; right:0; top:58px; bottom:0; width:min(var(--right-panel-width), 90vw); z-index:5; } }
 </style>
 </head>
 <body>
@@ -242,11 +246,13 @@ button:hover { border-color:var(--accent); }
     <div id="legend"></div>
     <div class="node-list" id="nodeList"></div>
   </aside>
+  <div class="resizer left-resizer" id="leftResizer" title="Resize left panel" aria-label="Resize left panel"></div>
   <section class="graph-wrap" id="graphWrap">
     <svg id="graph" role="img" aria-label="OKF knowledge graph" preserveAspectRatio="xMidYMid meet"></svg>
     <div class="toolbar"><button id="zoomIn">+</button><button id="zoomOut">−</button><button id="resetZoom">Reset</button></div>
     <div class="tooltip" id="tooltip"></div>
   </section>
+  <div class="resizer right-resizer" id="rightResizer" title="Resize right panel" aria-label="Resize right panel"></div>
   <aside class="detail" id="detail"><p class="empty">Select a concept node to inspect frontmatter, body preview, outgoing links, and backlinks.</p></aside>
 </main>
 <script id="bundle-data" type="application/json">__GRAPH_DATA__</script>
@@ -396,7 +402,7 @@ function renderDetail() {
   if (!selected) { el.innerHTML = '<p class="empty">Select a concept node to inspect frontmatter, body preview, outgoing links, and backlinks.</p>'; return; }
   const outgoing = links.filter(e => e.source === selected).map(e => e.target);
   const incoming = links.filter(e => e.target === selected).map(e => e.source);
-  el.innerHTML = `<h2>${escape(selected.title)}</h2><div class="id">${escape(selected.id)}</div><p>${escape(selected.description)}</p><p><span class="badge">${escape(selected.type)}</span>${(selected.tags||[]).map(t=>`<span class="badge">${escape(t)}</span>`).join('')}</p>${selected.resource?`<p><strong>Resource:</strong><br><span class="id">${escape(selected.resource)}</span></p>`:''}<h3>Outgoing links</h3>${outgoing.length?'<ul>'+outgoing.map(n=>`<li><a href="#" data-id="${escape(n.id)}">${escape(n.title||n.id)}</a></li>`).join('')+'</ul>':'<p class="empty">None</p>'}<h3>Backlinks</h3>${incoming.length?'<ul>'+incoming.map(n=>`<li><a href="#" data-id="${escape(n.id)}">${escape(n.title||n.id)}</a></li>`).join('')+'</ul>':'<p class="empty">None</p>'}<h3>Body preview</h3><pre>${escape((selected.body||'').slice(0,2500))}</pre>`;
+  el.innerHTML = `<h2>${escape(selected.title)}</h2><div class="id">${escape(selected.id)}</div><p>${escape(selected.description)}</p><p><span class="badge">${escape(selected.type)}</span>${(selected.tags||[]).map(t=>`<span class="badge">${escape(t)}</span>`).join('')}</p>${selected.resource?`<p><strong>Resource:</strong><br><span class="id">${escape(selected.resource)}</span></p>`:''}<h3>Outgoing links</h3>${outgoing.length?'<ul>'+outgoing.map(n=>`<li><a href="#" data-id="${escape(n.id)}">${escape(n.title||n.id)}</a></li>`).join('')+'</ul>':'<p class="empty">None</p>'}<h3>Backlinks</h3>${incoming.length?'<ul>'+incoming.map(n=>`<li><a href="#" data-id="${escape(n.id)}">${escape(n.title||n.id)}</a></li>`).join('')+'</ul>':'<p class="empty">None</p>'}<h3>Body preview</h3><pre class="body-preview">${escape((selected.body||'').slice(0,2500))}</pre>`;
   el.querySelectorAll('a[data-id]').forEach(a => a.addEventListener('click', ev => { ev.preventDefault(); const n = byId.get(a.dataset.id); if (n) select(n); }));
 }
 function renderList() {
@@ -405,6 +411,41 @@ function renderList() {
   el.querySelectorAll('.node-row').forEach(row => row.addEventListener('click', () => { const n = byId.get(row.dataset.id); if (n) select(n); }));
 }
 function updateStats() { document.getElementById('stats').textContent = `${visibleNodes().length}/${nodes.length} concepts · ${visibleLinks().length}/${links.length} links · ${bundle.types.length} types`; }
+function initPanelResizers() {
+  const main = document.querySelector('main');
+  const left = document.getElementById('leftResizer');
+  const right = document.getElementById('rightResizer');
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const startDrag = (event, side) => {
+    event.preventDefault();
+    const handle = side === 'left' ? left : right;
+    handle.classList.add('dragging');
+    const move = ev => {
+      const rect = main.getBoundingClientRect();
+      if (side === 'left') {
+        const rightWidth = parseFloat(getComputedStyle(main).getPropertyValue('--right-panel-width')) || 360;
+        const w = clamp(ev.clientX - rect.left, 120, Math.max(120, rect.width - rightWidth - 14));
+        main.style.setProperty('--left-panel-width', `${Math.round(w)}px`);
+      } else {
+        const leftWidth = parseFloat(getComputedStyle(main).getPropertyValue('--left-panel-width')) || 280;
+        const w = clamp(rect.right - ev.clientX, 120, Math.max(120, rect.width - leftWidth - 14));
+        main.style.setProperty('--right-panel-width', `${Math.round(w)}px`);
+      }
+      scheduleResize();
+    };
+    const up = () => {
+      handle.classList.remove('dragging');
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      scheduleResize();
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  };
+  if (left) left.addEventListener('pointerdown', ev => startDrag(ev, 'left'));
+  if (right) right.addEventListener('pointerdown', ev => startDrag(ev, 'right'));
+}
+
 function initUi() {
   const typeFilter = document.getElementById('typeFilter');
   const typeMenu = document.getElementById('typeMenu');
@@ -423,7 +464,7 @@ function initUi() {
   svg.on('click', () => select(null));
 }
 
-initUi(); resize(); renderList(); renderGraph(); setTimeout(() => fit(0), 250);
+initUi(); initPanelResizers(); resize(); renderList(); renderGraph(); setTimeout(() => fit(0), 250);
 if ('ResizeObserver' in window) new ResizeObserver(scheduleResize).observe(wrap); else window.addEventListener('resize', scheduleResize);
 })();
 </script>
