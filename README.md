@@ -1,6 +1,7 @@
 # OKF Manager
 
-OKF Manager delivers portable Open Knowledge Format ([OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)) management to Agent Zero projects.
+OKF Manager delivers portable Open Knowledge Format ([OKF](https://github.com/GoogleCloudPlatform/knowledge-catalog/tree/main/okf)) management and visualization to Agent Zero projects.
+<img width="2258" height="1047" alt="OKF Graph View" src="https://github.com/user-attachments/assets/2f8f2d39-8545-4638-b8c7-0db205fe44cb" />
 
 It provides:
 
@@ -17,7 +18,7 @@ Typical requests:
 - "Manage the OKF catalog for this project."
 - "Ingest these source documents into OKF."
 - "Validate the OKF bundle."
-- "Update the knowledge graph."
+- "Display the knowledge graph."
 - "Generate indexes and refresh viz.html."
 
 ## Install
@@ -29,6 +30,13 @@ Copy or install this plugin into Agent Zero under:
 ```
 
 Then enable it from the Agent Zero Plugins UI if it is not already enabled.
+
+To test OKF_Manager, create a blank project and in a new chat session, type the request:
+```text
+Ingest <your_collection_of_files> and display its graph
+```
+The OKF-Manager skill will be invoked and will ask permission to create an OKF Catalog in the current project.
+When you reply `yes`, the content will be ingested, catalogued, and the OKF Concept Graph displayed in the Agent Zero browser.
 
 ## Repository layout
 
