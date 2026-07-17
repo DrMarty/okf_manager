@@ -20,6 +20,11 @@ _TYPE_COLORS = [
 ]
 
 
+
+def _is_raw_evidence(rel) -> bool:
+    parts = rel.parts if hasattr(rel, "parts") else Path(str(rel)).parts
+    return len(parts) >= 2 and parts[0] == "sources" and parts[1] == "raw"
+
 def _build_graph(root: Path) -> dict:
     concepts = []
     ids = set()
@@ -27,7 +32,10 @@ def _build_graph(root: Path) -> dict:
     for md in sorted(root.rglob("*.md")):
         if md.name in {"index.md", "log.md"}:
             continue
-        cid = md.relative_to(root).with_suffix("").as_posix()
+        rel = md.relative_to(root)
+        if _is_raw_evidence(rel):
+            continue
+        cid = rel.with_suffix("").as_posix()
         ids.add(cid)
         fm, body = _doc(md)
         tags = fm.get("tags") or []
@@ -40,7 +48,7 @@ def _build_graph(root: Path) -> dict:
             "description": str(fm.get("description") or ""),
             "resource": str(fm.get("resource") or ""),
             "tags": [str(t) for t in tags],
-            "path": md.relative_to(root).as_posix(),
+            "path": rel.as_posix(),
             "body": body,
         }
         concepts.append(node)
@@ -51,7 +59,10 @@ def _build_graph(root: Path) -> dict:
     for md in sorted(root.rglob("*.md")):
         if md.name in {"index.md", "log.md"}:
             continue
-        source = md.relative_to(root).with_suffix("").as_posix()
+        rel = md.relative_to(root)
+        if _is_raw_evidence(rel):
+            continue
+        source = rel.with_suffix("").as_posix()
         _, body = _doc(md)
         for m in _LINK_RE.finditer(body):
             target = m.group(1)

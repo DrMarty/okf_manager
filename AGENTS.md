@@ -32,7 +32,9 @@
 - Specialist `okf_mgr` role and operating behavior are owned by `agents/okf_mgr/prompts/agent.system.main.specifics.md`.
 - Profile-local tool contracts are owned by `agents/okf_mgr/prompts/agent.system.tool.*.md`.
 - Profile-local reusable workflows are owned by `agents/okf_mgr/skills/*/SKILL.md`.
+- Profile-local OKF tools are active-agent tools; runtime prompts/skills must warn not to dispatch them through generic `parallel` jobs unless the worker is explicitly a fresh `okf_mgr` subordinate.
 - Deterministic OKF operations are owned by `agents/okf_mgr/tools/*.py` and `scripts/*.py`.
+- Graph verification is owned by `scripts/okf_verify_graph.py`; bulk concept-plan writing is owned by `scripts/okf_bulk_write.py`.
 - Public install/use, web-ingestion disclosure, and Plugin Index-facing explanation are owned by `README.md`.
 - Runtime defaults are owned by `default_config.yaml`.
 - Plugin Index metadata is owned by `docs/community/index.yaml`.
@@ -47,6 +49,7 @@
 - Always require explicit user confirmation before creating a new OKF bundle; the owning runtime rule lives in `skills/okf-project-manager/SKILL.md` and the default setting lives in `default_config.yaml`.
 - Preserve the README web-ingestion/network disclosure whenever changing URL-fetch or crawl behavior.
 - Do not store generated project OKF catalog data, raw ingested sources, chat transcripts, secrets, tokens, or local user data in the plugin repository.
+- Ingested project source evidence belongs in a meaningfully named sibling folder under `<okf-root>/raw/`, not in the plugin repository; internal files such as `.git/**`, hidden files, caches, virtualenvs, and generated artifacts must be excluded from source inventories and raw evidence copies.
 - Keep Plugin Index artifacts small and valid: `docs/community/index.yaml` must follow the Plugin Index schema, and `docs/community/thumbnail.png` must remain square and no larger than 20 KB.
 - Keep generated `viz.html` graph views stable in Agent Zero's constrained Browser side tab: avoid hover/mousemove handlers, tooltips, or resize logic that can change document layout or trigger aspect-ratio oscillation.
 - Keep the runtime plugin-dialog thumbnail at `webui/thumbnail.png`; it should be a valid square image and may mirror `docs/community/thumbnail.png` when the same artwork is appropriate.
@@ -60,6 +63,7 @@
   - `okf_mgr` profile behavior changes -> `agents/okf_mgr/prompts/agent.system.main.specifics.md`
   - tool behavior changes -> matching `agents/okf_mgr/tools/*.py` and `agents/okf_mgr/prompts/agent.system.tool.*.md`
   - profile-local workflow changes -> `agents/okf_mgr/skills/*/SKILL.md`
+  - profile-local OKF tool execution rules -> `agents/okf_mgr/prompts/agent.system.main.specifics.md` and matching `agent.system.tool.*.md` prompts
   - public usage or disclosure changes -> `README.md`
   - default behavior changes -> `default_config.yaml`
   - Plugin Index metadata changes -> `docs/community/index.yaml`
@@ -113,6 +117,7 @@ Run relevant checks after edits:
 - If profile files changed, follow `agents/okf_mgr/AGENTS.md` verification.
 - If tool files changed, import every `agents/okf_mgr/tools/*.py` file with `/opt/venv-a0/bin/python` and verify each defines a `helpers.tool.Tool` subclass.
 - If helper scripts changed, run smoke checks for validation, index generation, and visualization on a temporary OKF bundle.
+- If graph verification or bulk-write scripts changed, run them on a temporary or test OKF bundle and confirm exact JSON counts.
 - If Plugin Index files changed, verify:
   - `docs/community/index.yaml` is valid YAML,
   - `docs/community/index.yaml` is no larger than 2000 characters,
@@ -125,3 +130,5 @@ Run relevant checks after edits:
 | Child | Scope |
 | --- | --- |
 | `agents/okf_mgr/AGENTS.md` | Bundled `okf_mgr` specialist profile, prompts, profile-local tools, and profile-local skills. |
+
+- Keep `okf/catalog/` clean for concept content only; raw evidence must be retained in sibling `okf/raw/<meaningful-name>/` folders and referenced from concepts with code-checked relative links.

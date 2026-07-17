@@ -4,6 +4,11 @@ from pathlib import Path
 from collections import defaultdict
 from helpers.tool import Tool, Response
 
+
+def _is_raw_evidence(rel) -> bool:
+    parts = rel.parts if hasattr(rel, "parts") else Path(str(rel)).parts
+    return len(parts) >= 2 and parts[0] == "sources" and parts[1] == "raw"
+
 class OkfRegenerateIndexes(Tool):
     """Generate reference-agent-style index.md files for an OKF bundle."""
     async def execute(self, **kwargs):
@@ -13,6 +18,8 @@ class OkfRegenerateIndexes(Tool):
         if not root.is_dir(): return Response(message=f"Bundle directory not found: {root}", break_loop=False)
         dirs=set()
         for md in root.rglob("*.md"):
+            rel = md.relative_to(root)
+            if md.name in {"index.md","log.md"} or _is_raw_evidence(rel): continue
             cur=md.parent
             while True:
                 dirs.add(cur)
@@ -23,7 +30,7 @@ class OkfRegenerateIndexes(Tool):
             entries=[]
             for child in sorted(directory.iterdir()):
                 if child.name == "index.md": continue
-                if child.is_file() and child.suffix == ".md" and child.name != "log.md":
+                if child.is_file() and child.suffix == ".md" and child.name != "log.md" and not _is_raw_evidence(child.relative_to(root)):
                     fm=_fm(child)
                     entries.append((str(fm.get("type") or "Other"), str(fm.get("title") or child.stem), child.name, str(fm.get("description") or "")))
                 elif child.is_dir():

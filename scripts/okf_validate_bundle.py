@@ -6,7 +6,7 @@ import re
 import sys
 from pathlib import Path
 
-_LINK_RE = re.compile(r"\]\(([^)\s]+\.md)(?:#[A-Za-z0-9_-]*)?\)")
+_LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[A-Za-z0-9_-]*)?\)")
 
 
 def split_frontmatter(text: str):
@@ -25,6 +25,19 @@ def split_frontmatter(text: str):
     return fm, text[end + 4 :].lstrip("\n"), ""
 
 
+
+def _is_raw_evidence(rel) -> bool:
+    parts = rel.parts if hasattr(rel, "parts") else Path(str(rel)).parts
+    return len(parts) >= 2 and parts[0] == "sources" and parts[1] == "raw"
+
+
+def _is_allowed_raw_link(root: Path, dest: Path) -> bool:
+    try:
+        rel = dest.resolve().relative_to(root.parent.resolve())
+    except Exception:
+        return False
+    return len(rel.parts) >= 2 and rel.parts[0] == "raw"
+
 def validate(root: Path, strict: bool = True) -> dict:
     root = root.expanduser().resolve()
     issues = []
@@ -32,8 +45,9 @@ def validate(root: Path, strict: bool = True) -> dict:
     if not root.is_dir():
         return {"concept_count": 0, "issue_count": 1, "issues": [{"path": str(root), "issue": "bundle directory not found"}]}
     for path in sorted(root.rglob("*.md")):
-        rel = path.relative_to(root).as_posix()
-        if path.name in {"index.md", "log.md"}:
+        rel_path = path.relative_to(root)
+        rel = rel_path.as_posix()
+        if path.name in {"index.md", "log.md"} or _is_raw_evidence(rel_path):
             continue
         count += 1
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -49,7 +63,7 @@ def validate(root: Path, strict: bool = True) -> dict:
             issues.append({"path": rel, "issue": "tags must be a YAML list"})
         for match in _LINK_RE.finditer(body):
             target = match.group(1)
-            if "://" in target:
+            if "://" in target or target.startswith("#") or target.startswith("mailto:"):
                 continue
             if target.startswith("/"):
                 issues.append({"path": rel, "issue": f"root-relative internal link discouraged: {target}"})
@@ -57,8 +71,11 @@ def validate(root: Path, strict: bool = True) -> dict:
             dest = (path.parent / target).resolve()
             try:
                 dest.relative_to(root)
+                allowed = True
             except Exception:
-                issues.append({"path": rel, "issue": f"link escapes bundle: {target}"})
+                allowed = _is_allowed_raw_link(root, dest)
+            if not allowed:
+                issues.append({"path": rel, "issue": f"link escapes catalog and is not under sibling raw/: {target}"})
                 continue
             if not dest.exists():
                 issues.append({"path": rel, "issue": f"broken link: {target}"})

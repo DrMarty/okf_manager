@@ -9,6 +9,15 @@ triggers:
   - "wrap okf_mgr workflow"
 ---
 
+### Tool execution safety
+
+When a project uses the bundled `okf_mgr` profile, profile-local OKF tools must be invoked from the active `okf_mgr` context. Do **not** fan out `okf_write_concept_doc` or other OKF profile-local tools through generic `parallel` jobs; use sequential tool calls or deterministic scripts for bulk writes, then validate the bundle.
+
+For repository or source-folder ingests, only non-internal files are meaningful catalog evidence. Exclude `.git/**`, hidden files, caches, virtualenvs, dependency folders, logs, and generated artifacts unless the user explicitly identifies one as source evidence. Preserve ingested evidence under the target OKF root at `raw/<meaningful-name>/` for future auditing or re-parsing.
+
+`<catalog-directory>/../raw/<meaningful-name>/` is retained evidence space, not OKF concept space. Validation, index generation, visualization, and concept counts must ignore raw Markdown files there.
+
+
 # OKF Project Manager
 
 Use this skill when the user asks to ingest, update, validate, index, visualize, or otherwise manage an OKF catalog.
@@ -56,6 +65,7 @@ Do not create the bundle until the user confirms. Existing bundle maintenance do
    - Treat user- or project-marked source folders as immutable.
    - Do not edit raw/source evidence unless the user explicitly asks.
    - Preserve citations to source files, source URLs, manifests, checksums, or notes where available.
+   - Copy or record ingested non-internal evidence under `<catalog-directory>/../raw/<meaningful-name>/` before final reporting.
 5. Delegate OKF catalog decisions and bundle-management work to `call_subordinate` with `profile: "okf_mgr"` whenever the task is nontrivial.
 6. In the subordinate prompt, require work inside the resolved workspace owner, require the resolved catalog directory, and require preservation of source provenance.
 7. Maintain derived concept Markdown in the resolved catalog directory:
@@ -65,7 +75,7 @@ Do not create the bundle until the user confirms. Existing bundle maintenance do
    - Use relative internal links for OKF relationships.
    - Use `index.md` only for directory indexes and `log.md` only for chronological update history.
    - Do not paste generated Markdown or prose directly into `code_execution_tool` shell commands; write concept files with OKF tools, `text_editor`, or carefully quoted here-docs/scripts so headings, backticks, paths, and links are not executed by the shell.
-8. After changes, ensure the bundle is validated, indexes are regenerated, `log.md` is updated, and `viz.html` is refreshed when graph-visible content changes.
+8. After changes, ensure the bundle is validated, indexes are regenerated, `log.md` is updated, and `viz.html` is refreshed when graph-visible content changes. Verify the graph by parsing the embedded `bundle-data` payload and reporting concept, edge, and type counts.
 9. Report changed paths and verification results to the user.
 
 ## Delegation Prompt Pattern
@@ -90,3 +100,6 @@ Return: changed paths, validation/index/visualization results, and any unresolve
 - If multiple existing project-local or global `okf/*/` catalogs are present and no target is specified, ask which catalog to use.
 - If validation fails, fix deterministic issues before reporting; only stop when blocked by missing source evidence or user choices.
 - If graph display is requested, open the resolved `<catalog-directory>/viz.html` with the Browser tool after regeneration.
+- If a generated code/script workflow is used, write the code to a file, syntax-check it before execution, then verify exact output paths and counts.
+
+Catalog linting after modifications must be code-driven with minimal LLM judgment: validate concept frontmatter, check all relative Markdown links, allow sibling `../raw/<meaningful-name>/...` evidence links, flag broken links, and repair deterministic path mistakes when possible before final reporting.

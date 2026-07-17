@@ -20,7 +20,10 @@
 - Tool implementations must remain portable and avoid hard-coded project-specific bundle paths.
 - BigQuery tools may require `google-cloud-bigquery` credentials and should fail with clear messages when dependencies or credentials are unavailable.
 - Web ingestion tools must preserve crawl guards for allowed hosts, path filters, max pages, and max depth.
+- Ingest workflows must preserve non-internal source evidence under the target OKF root at `raw/<meaningful-name>/` for auditing and future re-parsing; exclude `.git/**`, hidden files, caches, virtualenvs, dependency folders, and generated artifacts.
+- Runtime tools and scripts must treat sibling `okf/raw/<meaningful-name>/` as evidence space, not concept space; raw Markdown there must not be counted as concepts, indexed as concepts, or shown as graph nodes.
 - Write tools must preserve unknown frontmatter keys and avoid reserved concept filenames `index.md` and `log.md`.
+- Profile-local OKF tools must not be dispatched inside generic `parallel` jobs; run them sequentially in the active `okf_mgr` context, or use deterministic scripts for bulk writes followed by validation.
 - When users ask to see, show, graph, visualize, or visually inspect a knowledge catalog, the profile must generate/refresh `viz.html` and open or activate it as a live `file://` page in the Agent Zero Browser when possible; because the Browser side panel cannot be reliably forced open or detected from code, the final response must tell the user to open the Browser tab/panel manually if they do not see the loaded live self-view. Do not substitute screenshots, static images, or screenshot-only previews for the live self-view.
 
 ## Work Guidance
@@ -41,3 +44,5 @@
 ## Child DOX Index
 
 No child DOX files.
+
+- Keep concept catalogs clean: write concepts only under `okf/catalog/`; preserve raw ingested evidence under sibling `okf/raw/<meaningful-name>/`; lint catalog links to raw evidence in code after document modifications.

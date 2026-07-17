@@ -5,7 +5,20 @@ from pathlib import Path
 from urllib.parse import urlparse
 from helpers.tool import Tool, Response
 
-_LINK_RE = re.compile(r"\]\(([^)\s]+\.md)(?:#[A-Za-z0-9_-]*)?\)")
+_LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[A-Za-z0-9_-]*)?\)")
+
+
+def _is_raw_evidence(rel) -> bool:
+    parts = rel.parts if hasattr(rel, "parts") else Path(str(rel)).parts
+    return len(parts) >= 2 and parts[0] == "sources" and parts[1] == "raw"
+
+
+def _is_allowed_raw_link(root: Path, dest: Path) -> bool:
+    try:
+        rel = dest.resolve().relative_to(root.parent.resolve())
+    except Exception:
+        return False
+    return len(rel.parts) >= 2 and rel.parts[0] == "raw"
 
 class OkfValidateBundle(Tool):
     """Validate an OKF bundle for frontmatter and internal links."""
@@ -17,10 +30,11 @@ class OkfValidateBundle(Tool):
         issues=[]; count=0
         if not root.is_dir(): return Response(message=f"Bundle directory not found: {root}", break_loop=False)
         for path in sorted(root.rglob("*.md")):
-            rel=path.relative_to(root).as_posix()
-            text=path.read_text(encoding="utf-8", errors="replace")
-            if path.name in {"index.md","log.md"}:
+            rel_path=path.relative_to(root)
+            rel=rel_path.as_posix()
+            if path.name in {"index.md","log.md"} or _is_raw_evidence(rel_path):
                 continue
+            text=path.read_text(encoding="utf-8", errors="replace")
             count += 1
             fm, body, err = _split(text)
             if err: issues.append({"path": rel, "issue": err}); continue
@@ -30,11 +44,14 @@ class OkfValidateBundle(Tool):
             if "tags" in fm and not isinstance(fm["tags"], list): issues.append({"path": rel, "issue": "tags must be a YAML list"})
             for m in _LINK_RE.finditer(body):
                 target=m.group(1)
-                if "://" in target: continue
+                if "://" in target or target.startswith("#") or target.startswith("mailto:"): continue
                 if target.startswith("/"): issues.append({"path": rel, "issue": f"root-relative internal link discouraged: {target}"}); continue
                 dest=(path.parent/target).resolve()
-                try: dest.relative_to(root.resolve())
-                except Exception: issues.append({"path": rel, "issue": f"link escapes bundle: {target}"}); continue
+                try:
+                    dest.relative_to(root.resolve()); allowed=True
+                except Exception:
+                    allowed=_is_allowed_raw_link(root, dest)
+                if not allowed: issues.append({"path": rel, "issue": f"link escapes catalog and is not under sibling raw/: {target}"}); continue
                 if not dest.exists(): issues.append({"path": rel, "issue": f"broken link: {target}"})
         return Response(message=json.dumps({"concept_count": count, "issue_count": len(issues), "issues": issues}, indent=2, ensure_ascii=False), break_loop=False)
 

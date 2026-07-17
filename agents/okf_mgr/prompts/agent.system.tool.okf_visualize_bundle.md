@@ -5,6 +5,8 @@ The output embeds bundle data and browser-side JavaScript in a single `viz.html`
 
 Args: optional `bundle_root`, optional `out` path.
 
+Verification: after generation, parse the embedded `<script id="bundle-data" type="application/json">` payload, or use `scripts/okf_verify_graph.py`, and report exact concept, edge, and type counts. Do not treat file existence or file size alone as graph verification.
+
 Use this after validating or indexing a bundle when the user wants to browse relationships visually without a backend service.
 
 When the user asks to **see**, **show me**, **graph**, **visualize**, or visually inspect the knowledge catalog, generate or refresh the `viz.html` artifact with this tool and then open the generated file as a live page in the Agent Zero Browser using the `browser` tool, preferably with `action: "open"` or `action: "navigate"` and a `file://` URL for the absolute artifact path. Open or activate the Browser tab displaying the live self-view when possible, but do not claim you can definitively force or detect whether the Agent Zero Browser side panel is visible in the user's GUI. Report the full path after loading it.

@@ -6,6 +6,11 @@ from helpers.tool import Tool, Response
 
 _SHARD_SUFFIX_RE = re.compile(r"^(?P<prefix>.+?_)(?P<shard>\d{6,8})$")
 
+
+def _is_raw_evidence(rel) -> bool:
+    parts = rel.parts if hasattr(rel, "parts") else Path(str(rel)).parts
+    return len(parts) >= 2 and parts[0] == "sources" and parts[1] == "raw"
+
 class OkfListConcepts(Tool):
     """List concepts from an OKF bundle or, when requested, a BigQuery dataset."""
 
@@ -24,9 +29,10 @@ class OkfListConcepts(Tool):
             return Response(message=f"Bundle directory not found: {root}", break_loop=False)
         out = []
         for path in sorted(root.rglob("*.md")):
-            if path.name in {"index.md", "log.md"}:
+            rel_path = path.relative_to(root)
+            if path.name in {"index.md", "log.md"} or _is_raw_evidence(rel_path):
                 continue
-            rel = path.relative_to(root).with_suffix("").as_posix()
+            rel = rel_path.with_suffix("").as_posix()
             fm = _parse_frontmatter(path.read_text(encoding="utf-8", errors="replace"))
             out.append({"id": rel, "type": fm.get("type", ""), "resource": fm.get("resource"), "title": fm.get("title", ""), "description": fm.get("description", "")})
         return Response(message=_json(out), break_loop=False)
