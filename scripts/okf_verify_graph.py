@@ -37,11 +37,14 @@ def verify(path: Path) -> dict:
     edges = graph.get("edges") or graph.get("links") or []
     types = graph.get("types") or sorted({str(n.get("type", "")) for n in nodes if n.get("type")})
     stats = graph.get("stats") or {}
+    mode = graph.get("mode") or graph.get("metadata", {}).get("mode") or stats.get("mode")
+    if not mode and "d3@7" in page and ('id="bundle-data"' in page or "id='bundle-data'" in page):
+        mode = "live-d3-self-graph"
     return {
         "path": str(path),
         "exists": path.exists(),
         "bytes": path.stat().st_size,
-        "mode": graph.get("mode") or graph.get("metadata", {}).get("mode") or stats.get("mode") or "unknown",
+        "mode": mode or "unknown",
         "concepts": len(nodes),
         "edges": len(edges),
         "types": len(types),

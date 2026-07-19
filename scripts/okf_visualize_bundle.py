@@ -79,11 +79,13 @@ def _build_graph(root: Path) -> dict:
     type_names = sorted({n["type"] for n in concepts})
     palette = {typ: _TYPE_COLORS[i % len(_TYPE_COLORS)] for i, typ in enumerate(type_names)}
     return {
+        "mode": "live-d3-self-graph",
         "nodes": concepts,
         "edges": edges,
         "types": type_names,
         "palette": palette,
         "stats": {
+            "mode": "live-d3-self-graph",
             "concepts": len(concepts),
             "edges": len(edges),
             "types": len(type_names),

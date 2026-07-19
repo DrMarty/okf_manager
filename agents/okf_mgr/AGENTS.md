@@ -46,3 +46,24 @@
 No child DOX files.
 
 - Keep concept catalogs clean: write concepts only under `okf/catalog/`; preserve raw ingested evidence under sibling `okf/raw/<meaningful-name>/`; lint catalog links to raw evidence in code after document modifications.
+
+## Runtime and dependency policy
+
+- Agent Zero imports plugin tools and profile-local tool shims with the framework runtime. Keep those imports lightweight and compatible with `/opt/venv-a0/bin/python`.
+- Do not run OKF Manager workflows with bare `python`. Use an explicit runtime:
+  - `/opt/venv-a0/bin/python` for framework/plugin import checks.
+  - `scripts/okf_run.py` for deterministic OKF worker operations.
+  - `/a0/usr/plugins/okf_manager/.venv/bin/python` only after `scripts/okf_bootstrap_env.py` has reported success.
+- Prefer stable OKF scripts and JSON concept plans over regenerating large ad hoc Python in chat.
+- Before executing generated code, write it to disk, run `py_compile` or equivalent syntax checks, preflight required imports, then execute.
+- If a dependency materially improves reliability, do not avoid it by default. Install/check it in the plugin-local worker environment through `scripts/okf_bootstrap_env.py` and `requirements-worker.txt`.
+- After concept document modifications, run code-driven lint/repair/validation, regenerate indexes, refresh `viz.html`, and verify the embedded `bundle-data` payload.
+
+## Local OKF worker hardening
+
+- Prefer `scripts/okf_run.py` subcommands with explicit named options where available, e.g. `lint --catalog <okf>/catalog`, `verify-graph --catalog <okf>/catalog`, and `pipeline --catalog <okf>/catalog`.
+- For unstructured file collections, first run a code-generated source inventory/plan scaffold with `scripts/okf_run.py plan-sources --source-root <path> --out <inventory.json>`. This inventory must make no assumptions about file meaning, concept boundaries, or relationships; use it only as evidence for a separate JSON concept plan.
+- Do not execute or import scripts from retained evidence under `<okf>/raw/**`. Raw evidence is audit/reparse input only. Run OKF scripts from the installed plugin path through `scripts/okf_run.py`.
+- After copying or retaining raw evidence, clean generated/internal artifacts with `scripts/okf_run.py clean-raw --catalog <okf>/catalog` or the full `pipeline` command. Raw evidence must not retain `.git/**`, `__pycache__/**`, `.pyc`, virtualenvs, dependency folders, logs, or generated caches.
+- Final graph verification should report explicit graph mode from the embedded `bundle-data` payload; the expected D3 graph mode is `live-d3-self-graph`.
+

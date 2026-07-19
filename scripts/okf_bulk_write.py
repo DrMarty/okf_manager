@@ -15,6 +15,8 @@ import yaml
 
 RESERVED = {"index", "log", "index.md", "log.md"}
 INTERNAL_DIRS = {".git", "__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache", "node_modules", ".npm", ".venv", "venv", "dist", "build"}
+INTERNAL_SUFFIXES = {".pyc", ".pyo", ".log", ".tmp", ".swp"}
+INTERNAL_FILENAMES = {".DS_Store"}
 
 
 def _slug(value: str) -> str:
@@ -69,7 +71,30 @@ def write_doc(catalog_root: Path, record: dict, overwrite: bool) -> Path:
 
 
 def is_internal_path(path: Path) -> bool:
-    return any(part in INTERNAL_DIRS or part.startswith(".") for part in path.parts)
+    return (
+        any(part in INTERNAL_DIRS or part.startswith(".") for part in path.parts)
+        or path.suffix in INTERNAL_SUFFIXES
+        or path.name in INTERNAL_FILENAMES
+    )
+
+
+def clean_internal_files(raw_root: Path) -> list[str]:
+    """Remove generated/internal artifacts from retained raw evidence."""
+    removed: list[str] = []
+    if not raw_root.exists():
+        return removed
+    for child in sorted(raw_root.rglob("*"), key=lambda x: len(x.parts), reverse=True):
+        try:
+            rel = child.relative_to(raw_root)
+        except ValueError:
+            continue
+        if is_internal_path(rel):
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+            elif child.exists():
+                child.unlink(missing_ok=True)
+            removed.append(str(child))
+    return removed
 
 
 def raw_root_for_catalog(catalog_root: Path, raw_name: str) -> Path:
@@ -108,7 +133,7 @@ def copy_raw_sources(catalog_root: Path, sources: list[str], raw_name: str, sour
         dest = raw_root / rel_path
         dest.parent.mkdir(parents=True, exist_ok=True)
         if src.is_dir():
-            shutil.copytree(src, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*INTERNAL_DIRS, ".*"))
+            shutil.copytree(src, dest, dirs_exist_ok=True, ignore=shutil.ignore_patterns(*INTERNAL_DIRS, ".*", "*.pyc", "*.pyo", "*.log", "*.tmp"))
         else:
             shutil.copy2(src, dest)
         copied.append(str(dest))
@@ -138,7 +163,10 @@ def main(argv: list[str]) -> int:
         raw_name = args.raw_name or str(plan.get("raw_name") or default_raw_name(source_root, plan_path))
         raw_root = raw_root_for_catalog(root, raw_name)
         copied = copy_raw_sources(root, list(plan["raw_sources"]), raw_name, source_root)
-    print(json.dumps({"written_count": len(written), "written": written, "raw_root": str(raw_root) if raw_root else None, "raw_sources_copied": copied}, indent=2))
+        removed_internal = clean_internal_files(raw_root)
+    else:
+        removed_internal = []
+    print(json.dumps({"written_count": len(written), "written": written, "raw_root": str(raw_root) if raw_root else None, "raw_sources_copied": copied, "raw_internal_removed": removed_internal}, indent=2))
     return 0
 
 
